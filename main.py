@@ -6,51 +6,35 @@ from scapy.layers.inet import TCP
 
 import pyshark
 
+
 # Read the PCAP file
-def capturePackets(name,filter):
-    capture = pyshark.FileCapture('SYNScan_GeoIP_ChrisGreer.pcapng',display_filter='tcp')
+def capturePackets(name, filter):
+    return pyshark.FileCapture(name, display_filter=filter)
 
 
 # Filter the packets by protocol
-filtered_capture = capture
+
 
 # Extract the data from the packets
-#data = [packet for packet in filtered_capture]
-
+# data = [packet for packet in filtered_capture]
 
 
 # Extract the source IP addresses
-src_ips = [packet.ip.src for packet in capture]
-src_ips = src_ips[:100]
-# Extract the destination ports
-#dst_ports = [packet.tcp.dstport for packet in capture]
+def extractsrc(capture):
+    src_ips = [packet.ip.src for packet in capture]
+    if len(src_ips) > 100:
+        src_ips = src_ips[:100]
+    return src_ips
+
+
+# dst_ports = [packet.tcp.dstport for packet in capture]
 
 # Print the information
 """for src, dst in zip(src_ips, dst_ports):
     print(f'Source IP: {src} Destination Port: {dst}')"""
 
-def convert_ip_to_location(ip_address=[], params=[]):
-    '''
-    This function takes a list of IP addresses, sends them to
-    an API service and records the response which is associated
-    with the location of the given IP address. A pd.DataFrame
-    will be returned with all of the IP addresses and their
-    location parameters.
-    Parameters
-    ----------
-    ip_address: list[str]
-        a list of the ip addresses that we want to send to the API
-    params: list[str]
-        a list of the parameters we would like to receive back from
-        the API when we make our request
-    Returns
-    -------
-    pd.DataFrame
-        a pandas DataFrame that contains the original IP addresses as
-        well as all of the location information retrieved for each from
-        the API.
-    '''
 
+def convert_ip_to_location(ip_address=[], params=[]):
     # valid parameters to pass to the API
     valid_params = ['status', 'message', 'continenet', 'continentCode', 'country',
                     'countryCode', 'region', 'regionName', 'city', 'district',
@@ -94,24 +78,60 @@ def convert_ip_to_location(ip_address=[], params=[]):
             logging.warning(f'Unsuccessful response for IP: {ip}')
     # return the dataframe with all the information
     return df
-def mappit(df):
 
-    data = convert_ip_to_location(src_ips,["lat","lon","city"])
-    m = folium.Map(location=[20,0], tiles="OpenStreetMap", zoom_start=2)
 
-# add marker one by one on the map
-    for i in range(0,len(data)):
+def capturePacketProtocol(interface, protocol):
+    capture = pyshark.LiveCapture(interface)
+
+    for packet in capture.sniff_continuously():
+
+        try:
+            packet_info = [
+                packet.ip.dst,
+                packet.highest_layer
+            ]
+        except:
+            print("err")
+            packet_info = "err"
+        if packet_info[1]==protocol:
+            print("Torrent activity on "+packet_info[0])
+
+
+def mappit(src_ips):
+    data = convert_ip_to_location(src_ips, ["lat", "lon", "city"])
+    m = folium.Map(location=[20, 0], tiles="OpenStreetMap", zoom_start=2)
+
+    # add marker one by one on the map
+    for i in range(0, len(data)):
         folium.Marker(
-        location=[data.iloc[i]['lat'], data.iloc[i]['lon']],
-        popup=data.iloc[i]['city'],
+            location=[data.iloc[i]['lat'], data.iloc[i]['lon']],
+            popup=data.iloc[i]['city'],
         ).add_to(m)
 
-# Show the map again
+    # Show the map again
     m.show_in_browser()
 
 
 if __name__ == '__main__':
     que = input("tfa>>")
     arg = que.split(" ")
-    if que[0] =="ıcm":
+    if str(arg[0]) == 'icm':
+        fil = input("filter?->>")
+        """tcp.flags.syn==1 and !tcp.options"""
+        packets = capturePackets(arg[1], fil)
+        srcip = extractsrc(packets)
+        mappit(srcip)
+    elif arg[0] == "mitm":
+        name = arg[1]
+        gat = input("gateway->>")
+        mac = input("gateway-mac->>")
+        filter = "((arp.src.proto_ipv4 == " + gat + ") && (arp.opcode == 2)) && !(arp.src.hw_mac == " + mac + ")"
+        packets = capturePackets(arg[1], filter)
 
+        a = [p.eth.src for p in packets]
+        if len(a) > 0:
+            print("Arp poison macs are" + str(set(a)))
+    elif arg[0] == "btlstn" or "Btlstn":
+        capturePacketProtocol(arg[1],'BT-DHT')
+
+# 192.168.2.2 52:54:00:12:35:00
