@@ -91,7 +91,7 @@ def capturePacketProtocol(interface, protocol):
                 packet.highest_layer
             ]
         except:
-            print("err")
+
             packet_info = "err"
         if packet_info[1]==protocol:
             print("Torrent activity on "+packet_info[0])
@@ -110,28 +110,40 @@ def mappit(src_ips):
 
     # Show the map again
     m.show_in_browser()
+def arp_live_packets(interface, gat, mac):
+    capture = pyshark.LiveCapture(interface, "arp")
+
+    for packet in capture.sniff_continuously():
+
+        if (packet.arp.src_proto_ipv4==gat and packet.arp.src_hw_mac !=mac):
+            print("Arp poison at: " + packet.arp.src_hw_mac )
+
 
 
 if __name__ == '__main__':
     que = input("tfa>>")
     arg = que.split(" ")
-    if str(arg[0]) == 'icm':
+    print(arg[0])
+    if str(arg[0]) == 'icm':#icm SYNScan_GeoIP_ChrisGreer.pcapng
         fil = input("filter?->>")
-        """tcp.flags.syn==1 and !tcp.options"""
+        #tcp.flags.syn==1 and !tcp.options
         packets = capturePackets(arg[1], fil)
         srcip = extractsrc(packets)
         mappit(srcip)
-    elif arg[0] == "mitm":
+    elif arg[0] == "mitm":#mitm mitm.pcapng 192.168.2.2 52:54:00:12:35:00
         name = arg[1]
-        gat = input("gateway->>")
-        mac = input("gateway-mac->>")
+        gat = arg[2]
+        mac = arg[3]
         filter = "((arp.src.proto_ipv4 == " + gat + ") && (arp.opcode == 2)) && !(arp.src.hw_mac == " + mac + ")"
         packets = capturePackets(arg[1], filter)
 
         a = [p.eth.src for p in packets]
         if len(a) > 0:
             print("Arp poison macs are" + str(set(a)))
-    elif arg[0] == "btlstn" or "Btlstn":
+    elif arg[0] == "btlstn" or arg[0] == "Btlstn":#btlstn wi-fi
         capturePacketProtocol(arg[1],'BT-DHT')
-
+    elif arg[0]=="arpls":
+        arp_live_packets(arg[1],arg[2],arg[3])
+    else:
+        print("Comman 1: Show pcap file incoming packet")
 # 192.168.2.2 52:54:00:12:35:00
