@@ -12,26 +12,12 @@ def capturePackets(name, filter):
     return pyshark.FileCapture(name, display_filter=filter)
 
 
-# Filter the packets by protocol
-
-
-# Extract the data from the packets
-# data = [packet for packet in filtered_capture]
-
-
 # Extract the source IP addresses
 def extractsrc(capture):
     src_ips = [packet.ip.src for packet in capture]
     if len(src_ips) > 100:
         src_ips = src_ips[:100]
     return src_ips
-
-
-# dst_ports = [packet.tcp.dstport for packet in capture]
-
-# Print the information
-"""for src, dst in zip(src_ips, dst_ports):
-    print(f'Source IP: {src} Destination Port: {dst}')"""
 
 
 def convert_ip_to_location(ip_address=[], params=[]):
