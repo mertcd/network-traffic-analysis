@@ -1,4 +1,4 @@
-# network-traffic-analysis-with-bettercap
+  # network-traffic-analysis-with-bettercap
 
 This project created to gain better insight to network flow and create some detection measures against arp poisoning attacks and detect torrent activities on live network. As part of the gainig insight to network flow I added incoming packet mapping feature to increase understanding of incoming traffic.
 
@@ -27,7 +27,7 @@ filter?->> tcp.flags.syn==1 and !tcp.options
 
 ## Arp Poisoning Live Detection 
 
-We can set a sniffer for arp packets detect if there is someone trying to introduce new mac adress in our network enviroment.We u.se arpls keyword and interface name it could be wi-fi or eth0
+We can set a sniffer for arp packets detect if there is someone trying to introduce new mac adress in our network enviroment.We use arpls keyword and interface name it could be wi-fi or eth0
 then we can enter the correct gateway ip and gateway mac.
 
 arpls [interface name] [gateway ip ] [gateway mac]
@@ -42,3 +42,29 @@ tfa>> arpls wi-fi 192.168.2.2 11:12:33:44:55
 arp poisoning mac adress: 33:22:33:44:55:55
 
 ```
+
+## Torrent Activity Detection 
+
+We use packet filtering technic for detecting torrent activity. It filters the BT-DHT packets used on network.
+
+
+btlstn [interface name]
+
+```python
+
+tfa>> btlstn wi-fi 
+
+```
+
+```python
+
+Torrent activity on 192.168.3.2 
+
+```
+
+# Resources used
+https://gist.github.com/kaineblack/55b036932155c06a49a369d65885ef25#file-ip_api_function-py
+
+Its a nice gist repo but had to add some try except blocks to use it. Its highly prone to errors despite all the assertions.
+
+
